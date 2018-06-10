@@ -156,7 +156,7 @@
         <div class="tm-container-outer" id="tm-section-3">
             <ul class="nav nav-pills tm-tabs-links">
                 <li class="tm-tab-link-li">
-                    <a href="#1a" data-toggle="tab" class="tm-tab-link">
+                    <a href="#1a" data-toggle="tab" class="tm-tab-link" id="filmsBtn">
                         <img src="img/north-america.png" alt="Image" class="img-fluid">
                         Popular Films
                     </a>
@@ -250,14 +250,13 @@
 <!-- Single Page Nav (https://github.com/ChrisWojcik/single-page-nav) -->
 <script src="slick/slick.min.js"></script>                  <!-- http://kenwheeler.github.io/slick/ -->
 <script src="js/jquery.scrollTo.min.js"></script>           <!-- https://github.com/flesler/jquery.scrollTo -->
-<script src="/static/js/handlebars-v4.0.11.js"></script>    <!-- 前端渲染 -->
+<script src="js/handlebars-v4.0.11.js"></script>    <!-- 前端渲染 -->
 <script>
     /* DOM is ready
     ------------------------------------------------*/
     $(document).ready(function () {
 
         // 网页样式部分
-
         // Change top navbar on scroll
         $(window).on("scroll", function () {
             if ($(window).scrollTop() > 100) {
@@ -310,110 +309,108 @@
             $('.selected-seat').val(seat_number);
         }
 
-        $.ajax({
-            url: '/film/list',
-            type: 'GET',
-            async: false,
-            contentType: "application/json",
-            dataType: 'json',
-            success: function (data) {
-                console.log("get response : " + data['status'] + " " + data["data"][0].fid + " " + data["data"].length);
-                let tpl = $("#filmListTemplate").html();
-                // 预编译模板
-                let template = Handlebars.compile(tpl);
-                // 匹配json内容
-                let html = template(data);
-                // 插入模板,到ul中
-                $('#1a').html(html);
-
-                // 为每一个选择按钮绑定点击事件
-                var btns = document.querySelectorAll('a.select');
-                for(let btn of btns) {
-                    let filmName = btn.dataset.name; // 电影名称
-                    let fid = btn.dataset.fid;
-                    btn.addEventListener('click',function () {
-                        $('.selected-film').val(filmName);
-                        // 获得某一个电影的具体场次
-                        let url = '/film/' + fid;
+        $('#filmsBtn').click(function () {
+            // 加载所有电影
+            $.ajax({
+                url: '/film/list',
+                type: 'GET',
+                async: false,
+                contentType: "application/json",
+                dataType: 'json',
+                success: function (data) {
+                    console.log("get response : " + data['status'] + " " + data["data"][0].fid + " " + data["data"].length);
+                    let tpl = $("#filmListTemplate").html();
+                    // 预编译模板
+                    let template = Handlebars.compile(tpl);
+                    // 匹配json内容
+                    let html = template(data);
+                    // 插入模板,到ul中
+                    $('#1a').html(html);
+                    // 为每一个选择按钮绑定点击事件
+                    let btns = document.querySelectorAll('a.select');
+                    for(let btn of btns) {
+                        let filmName = btn.dataset.name; // 电影名称
+                        let fid = btn.dataset.fid;
+                        btn.addEventListener('click',function () {
+                            $('.selected-film').val(filmName);
+                            // 获得某一个电影的具体场次
+                            let url = '/film/' + fid;
+                            $.ajax({
+                                url:url,
+                                type:'GET',
+                                async:false,
+                                dataType:'json',
+                                success:function(data){
+                                    console.log("get response : " + data);
+                                    let tpl = $("#periodTemplate").html();
+                                    //预编译模板
+                                    let template = Handlebars.compile(tpl);
+                                    //匹配json内容
+                                    let html = template(data);
+                                    //插入模板,到ul中
+                                    $('#select-period').html(html);
+                                }
+                            });
+                        });
+                    };
+                    let seat_number = new Array(); // 选择的座位号
+                    // 增加座位按钮的事件
+                    $('#addBtn').click(function () {
+                        let num = $.getSeatNum();
+                        for (let i of  seat_number)
+                            if (i == num) return;
+                        seat_number.push(num);
+                        console.log(seat_number);
+                        $.showSelectedSeat(seat_number);
+                    });
+                    // 删除座位按钮事件
+                    $('#removeBtn').click(function () {
+                        let num = $.getSeatNum();
+                        seat_number.pop(num);
+                        console.log(seat_number);
+                        $.showSelectedSeat(seat_number);
+                    })
+                    // 生成订单
+                    $("#SubmitOrderBtn").click(function () {
+                        let pid = $('#select-period').val();
+                        let send = {pid : pid, seat_number : seat_number};
                         $.ajax({
-                            url:url,
-                            type:'GET',
+                            url:'/film/order',
+                            type:'POST',
                             async:false,
+                            data: JSON.stringify(send),
+                            contentType : "application/json",
                             dataType:'json',
                             success:function(data){
-                                console.log("get response : " + data);
-                                let tpl = $("#periodTemplate").html();
-                                //预编译模板
-                                let template = Handlebars.compile(tpl);
-                                //匹配json内容
-                                let html = template(data);
-                                //插入模板,到ul中
-                                $('#select-period').html(html);
+                                if (data.status == false){
+                                    alert(data.message);
+                                } else alert("生成订单成功");
                             }
                         });
                     });
-                };
+                }
+            });
+        })
 
-                var seat_number = new Array(); // 选择的座位号
-
-                // 增加座位按钮的事件
-                $('#addBtn').click(function () {
-                    let num = $.getSeatNum();
-                    for (let i of  seat_number)
-                        if (i == num) return;
-                    seat_number.push(num);
-                    console.log(seat_number);
-                    $.showSelectedSeat(seat_number);
-                });
-
-                // 删除座位按钮事件
-                $('#removeBtn').click(function () {
-                    let num = $.getSeatNum();
-                    seat_number.pop(num);
-                    console.log(seat_number);
-                    $.showSelectedSeat(seat_number);
-                })
-
-                // 生成订单
-                $("#SubmitOrderBtn").click(function () {
-                    let pid = $('#select-period').val();
-                    var send = {pid : pid, seat_number : seat_number};
-                    $.ajax({
-                        url:'/film/order',
-                        type:'POST',
-                        async:false,
-                        data: JSON.stringify(send),
-                        contentType : "application/json",
-                        dataType:'json',
-                        success:function(data){
-                            console.log("get response : " + data.status);
-                        }
-                    });
-                });
-
-                // 查看个人的所有订单
-                $("#orderBtn").click(function(){
-                    $.ajax({
-                        url:'/film/orders',
-                        type:'GET',
-                        async:false,
-                        dataType:'json',
-                        success:function(data){
-                            console.log("get response : " + data);
-                            let tpl = $("#OrderListTemplate").html();
-                            // 预编译模板
-                            let template = Handlebars.compile(tpl);
-                            // 匹配json内容
-                            let html = template(data);
-                            // 插入模板,到ul中
-                            $('#1a').html(html);
-                        }
-                    });
-                });
-            }
+        // 查看个人的所有订单
+        $("#orderBtn").click(function(){
+            $.ajax({
+                url:'/film/orders',
+                type:'GET',
+                async:false,
+                dataType:'json',
+                success:function(data){
+                    console.log("get response : " + data);
+                    let tpl = $("#OrderListTemplate").html();
+                    // 预编译模板
+                    let template = Handlebars.compile(tpl);
+                    // 匹配json内容
+                    let html = template(data);
+                    // 插入模板,到ul中
+                    $('#1a').html(html);
+                }
+            });
         });
-
-        //
 
     });
 

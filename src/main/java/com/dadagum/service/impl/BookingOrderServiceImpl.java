@@ -38,7 +38,6 @@ public class BookingOrderServiceImpl implements BookingOrderService {
         for (int i = 0; i < seatNumber.length; i++){
             // 检查座位是否已经被卖出
             if (bookingOrderDao.hasSoldSeat(bookingOrder.getPid(), seatNumber[i])) throw new HasSoldSeatException("该座位已经出售了！");
-            // TODO
             bookingOrderDao.addOrderSeat(oid, seatNumber[i]);
         }
     }

@@ -4,8 +4,6 @@ import com.dadagum.bean.BookingOrder;
 import com.dadagum.dto.JsonResult;
 import com.dadagum.bean.Film;
 import com.dadagum.bean.FilmPeriod;
-import com.dadagum.exception.FilmNotFoundException;
-import com.dadagum.exception.FilmPeriodNotFoundException;
 import com.dadagum.exception.HasSoldSeatException;
 import com.dadagum.service.BookingOrderService;
 import com.dadagum.service.FilmInfoService;
